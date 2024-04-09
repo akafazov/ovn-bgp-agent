@@ -23,6 +23,7 @@ LOG = logging.getLogger(__name__)
 @ovn_bgp_agent.privileged.ovs_vsctl_cmd.entrypoint
 def ovs_cmd(command, args, timeout=None):
     full_args = [command]
+    LOG.debug("--- Running command: %s %s", command, args)
     if timeout is not None:
         full_args += ['--timeout=%s' % timeout]
     full_args += args
