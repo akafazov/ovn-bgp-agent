@@ -29,13 +29,14 @@ from ovn_bgp_agent.utils import linux_net
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
+OVS_VSCTL_CMD = 'docker exec -it ovn_controller ovs-vsctl'
 
 def _find_ovs_port(bridge):
     # TODO(ltomasbo): What happens if there are several patch ports on the
     # same bridge?
     ovs_port = None
     ovs_ports = ovn_bgp_agent.privileged.ovs_vsctl.ovs_cmd(
-        'ovs-vsctl', ['list-ports', bridge])[0].rstrip()
+        OVS_VSCTL_CMD, ['list-ports', bridge])[0].rstrip()
     for p in ovs_ports.split('\n'):
         if p.startswith(constants.OVS_PATCH_PROVNET_PORT_PREFIX):
             ovs_port = p
@@ -52,12 +53,12 @@ def get_bridge_flows(bridge, filter_=None):
 
 def get_device_port_at_ovs(device):
     return ovn_bgp_agent.privileged.ovs_vsctl.ovs_cmd(
-        'ovs-vsctl', ['get', 'Interface', device, 'ofport'])[0].rstrip()
+        OVS_VSCTL_CMD, ['get', 'Interface', device, 'ofport'])[0].rstrip()
 
 
 def get_ovs_ports_info(bridge):
     ovs_ports = ovn_bgp_agent.privileged.ovs_vsctl.ovs_cmd(
-        'ovs-vsctl', ['list-ports', bridge])[0].rstrip()
+        OVS_VSCTL_CMD, ['list-ports', bridge])[0].rstrip()
     return ovs_ports.split("\n")
 
 
@@ -80,7 +81,7 @@ def get_ovs_patch_port_ofport(patch):
     patch_name = "patch-{}-to-br-int".format(patch)
     try:
         ofport = ovn_bgp_agent.privileged.ovs_vsctl.ovs_cmd(
-            'ovs-vsctl', ['get', 'Interface', patch_name, 'ofport']
+            OVS_VSCTL_CMD, ['get', 'Interface', patch_name, 'ofport']
             )[0].rstrip()
     except Exception:
         raise agent_exc.PatchPortNotFound(localnet=patch)
@@ -211,7 +212,7 @@ def add_device_to_ovs_bridge(device, bridge, vlan_tag=None):
     args = ['--may-exist', 'add-port', bridge, device]
     if vlan_tag is not None:
         args.append('tag=%s' % vlan_tag)
-    ovn_bgp_agent.privileged.ovs_vsctl.ovs_cmd('ovs-vsctl', args)
+    ovn_bgp_agent.privileged.ovs_vsctl.ovs_cmd(OVS_VSCTL_CMD, args)
 
 
 def del_device_from_ovs_bridge(device, bridge=None):
@@ -219,7 +220,7 @@ def del_device_from_ovs_bridge(device, bridge=None):
     if bridge:
         args.append(bridge)
     args.append(device)
-    ovn_bgp_agent.privileged.ovs_vsctl.ovs_cmd('ovs-vsctl', args)
+    ovn_bgp_agent.privileged.ovs_vsctl.ovs_cmd(OVS_VSCTL_CMD, args)
 
 
 def add_vlan_port_to_ovs_bridge(bridge, vlan, vlan_tag):
@@ -228,7 +229,7 @@ def add_vlan_port_to_ovs_bridge(bridge, vlan, vlan_tag):
     args = [
         '--may-exist', 'add-port', bridge, vlan, 'tag={}'.format(vlan_tag),
         '--', 'set', 'interface', vlan, 'type=internal']
-    ovn_bgp_agent.privileged.ovs_vsctl.ovs_cmd('ovs-vsctl', args)
+    ovn_bgp_agent.privileged.ovs_vsctl.ovs_cmd(OVS_VSCTL_CMD, args)
 
 
 def del_flow(flow, bridge, cookie):
